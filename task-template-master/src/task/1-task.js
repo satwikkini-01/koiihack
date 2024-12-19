@@ -38,6 +38,7 @@ async function fetchRSSFeeds(category) {
         title: item.title,
         link: item.link,
         source: feed.title,
+        description: item.contentSnippet || item.content || "No description available",
       }));
       aggregatedNews.push(...articles);
       console.log(`Fetched ${articles.length} articles from ${url}`);
@@ -46,7 +47,14 @@ async function fetchRSSFeeds(category) {
     }
   }
 
-  return aggregatedNews;
+  // Filter out unwanted items like "Videos" or "Opinion"
+  aggregatedNews = aggregatedNews.filter(
+    (article) =>
+      article.title &&
+      !["Videos", "Air Quality Index", "Opinion"].includes(article.title.trim())
+  );
+
+  return aggregatedNews.slice(0, 10); // Limit to top 10 news
 }
 
 // Scrape news headlines directly from websites
@@ -77,7 +85,7 @@ async function scrapeNewsWebsites() {
       const headlines = [];
       $(site.headlineSelector).each((_, element) => {
         const title = $(element).text().trim();
-        if (title) {
+        if (title && !["Videos", "Air Quality Index", "Opinion"].includes(title)) {
           headlines.push({ title, source: site.name, link: site.url });
         }
       });
@@ -89,7 +97,41 @@ async function scrapeNewsWebsites() {
     }
   }
 
-  return aggregatedNews;
+  return aggregatedNews.slice(0, 10); // Limit to top 10 news
+}
+
+// Fetch full news content
+async function fetchFullContent(newsList) {
+  const detailedNews = [];
+
+  for (const news of newsList) {
+    try {
+      console.log(`Fetching full content for: ${news.link}`);
+      const response = await axios.get(news.link);
+      const $ = cheerio.load(response.data);
+
+      // Extract the main content (this will depend on website structure)
+      const content = $("article").text().trim() || $("body").text().trim();
+      detailedNews.push({
+        title: news.title,
+        link: news.link,
+        source: news.source,
+        description: news.description,
+        content: content || "Full content not available",
+      });
+    } catch (error) {
+      console.error(`Failed to fetch full content for ${news.link}:`, error.message);
+      detailedNews.push({
+        title: news.title,
+        link: news.link,
+        source: news.source,
+        description: news.description,
+        content: "Failed to fetch content",
+      });
+    }
+  }
+
+  return detailedNews;
 }
 
 // Main task to aggregate news
@@ -100,9 +142,10 @@ async function fetchNewsAggregator(category = "general") {
   const scrapedNews = await scrapeNewsWebsites();
 
   const combinedNews = [...rssNews, ...scrapedNews];
+  const detailedNews = await fetchFullContent(combinedNews.slice(0, 10)); // Limit to top 10 news
 
-  console.log("Aggregated News:", combinedNews);
-  return combinedNews;
+  console.log("Aggregated News with Full Content:", detailedNews);
+  return detailedNews;
 }
 
 // Task execution function for Koii
