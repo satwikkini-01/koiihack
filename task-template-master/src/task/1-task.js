@@ -1,29 +1,56 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import Parser from "rss-parser";
+import {BskyAgent} from "@atproto/api";
 
 const parser = new Parser();
 
-// RSS Feeds for different categories
-const rssFeeds = {
-  general: [
-    "https://www.thehindu.com/news/feeder/default.rss", // The Hindu
-    "https://indianexpress.com/feed/", // Indian Express
-    "https://timesofindia.indiatimes.com/rssfeeds/1221656.cms", // Times of India
-  ],
-  sports: [
-    "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms", // TOI Sports
-    "https://www.espncricinfo.com/rss/content/story/feeds/0.xml", // ESPN Cricinfo
-  ],
-  politics: [
-    "https://www.ndtv.com/rss", // NDTV
-    "https://www.thehindu.com/news/national/feeder/default.rss", // The Hindu Politics
-  ],
-  entertainment: [
-    "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms", // TOI Entertainment
-    "https://www.bollywoodhungama.com/rss/entertainment-news.xml", // Bollywood Hungama
-  ],
-};
+// Define constants
+const USERNAME = "sanath-naik.bsky.social"; 
+const PASSWORD = "$@Nnukakka12";
+
+// Function to fetch the latest post
+async function fetchURL() {
+  const agent = new BskyAgent({ service: 'https://bsky.social' });
+
+  // Log in to Bluesky
+  await agent.login({ identifier: USERNAME, password: PASSWORD });
+
+  // Fetch the user's feed
+  const profile = await agent.getProfile({ actor: USERNAME });
+  const feed = await agent.getAuthorFeed({ actor: profile.data.did, limit: 1 });
+
+  if (feed.data.feed.length > 0) {
+    const urlsBS =  feed.data.feed[0].post.record.text;
+    console.log(urlsBS)
+    return urlsBS;
+  } else {
+    console.log("No posts found for this user.");
+    return null;
+  }
+}
+
+// const rssFeeds = {
+//   general: [
+//     "https://www.thehindu.com/news/feeder/default.rss", // The Hindu
+//     "https://indianexpress.com/feed/", // Indian Express
+//     "https://timesofindia.indiatimes.com/rssfeeds/1221656.cms", // Times of India
+//   ],
+//   sports: [
+//     "https://timesofindia.indiatimes.com/rssfeeds/4719148.cms", // TOI Sports
+//     "https://www.espncricinfo.com/rss/content/story/feeds/0.xml", // ESPN Cricinfo
+//   ],
+//   politics: [
+//     "https://www.ndtv.com/rss", // NDTV
+//     "https://www.thehindu.com/news/national/feeder/default.rss", // The Hindu Politics
+//   ],
+//   entertainment: [
+//     "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms", // TOI Entertainment
+//     "https://www.bollywoodhungama.com/rss/entertainment-news.xml", // Bollywood Hungama
+//   ],
+// };
+
+const rssFeeds = fetchURL();
 
 // Fetch news from public RSS feeds
 async function fetchRSSFeeds(category) {
