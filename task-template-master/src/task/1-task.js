@@ -2,12 +2,50 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import Parser from "rss-parser";
 import {BskyAgent} from "@atproto/api";
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const parser = new Parser();
 
 // Define constants
 const USERNAME = "sanath-naik.bsky.social"; 
 const PASSWORD = "$@Nnukakka12";
+const apiKey = "AIzaSyDAgtN1RiD7oMBSMMEuioVPwTjXoklDHYc"
+
+async function generateSummary(context, apiKey) {
+  try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+
+      let model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      // Construct the prompt with context
+      const prompt = {
+          contents: [
+          {
+              role: 'user',
+              parts: [
+              {
+                  text: `Summarize the following news article into a concise paragraph containing the key details, including the main topic, any important names, dates, locations, and outcomes. Ensure the summary is clear and objective, without personal opinions or embellishments. Keep the summary under [desired word count] words.
+                  Article: \n\n${JSON.stringify(
+                  context
+                  )}`,
+              },
+              ],
+          },
+          ],
+      };
+
+      const result = await model.generateContent(prompt);
+
+      console.log('gemini returned comment', result.response.text());
+      const comment = result.response.text();
+      
+      return comment;
+
+  } catch (error) {
+    console.error('Error generating Bluesky comment:', error);
+    return null; // Or handle the error as needed
+  }
+}
 
 // Function to fetch the latest post
 // Function to fetch the latest post and parse the URL configuration
@@ -162,9 +200,10 @@ async function fetchNewsAggregator(category = "general") {
 
   const combinedNews = [...rssNews, ...scrapedNews];
   const detailedNews = await fetchFullContent(combinedNews.slice(0, 10)); // Limit to top 10 news
-
+  const summ = await generateSummary(detailedNews,apiKey);
   console.log("Aggregated News with Full Content:", detailedNews);
-  return detailedNews;
+  console.log("Gemini Summarized:",summ)
+  return summ;
 }
 
 // Task execution function for Koii
