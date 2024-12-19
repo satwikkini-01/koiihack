@@ -71,7 +71,7 @@ requirementsTags:
 # Tags: You can select the tags here via https://www.koii.network/docs/develop/command-line-tool/create-task-cli/create-task#tags
 tags: ["AI", "ML"] 
 # Environment: (Required | TEST or PRODUCTION) Production mode will expose your task to all the task runners. 
-environment: "TEST"
+environment: "PRODUCTION"
 
 #################################### BELOW IS FOR UPDATE TASK ONLY ####################################
 # Old Task ID: (ONLY for task update) 
