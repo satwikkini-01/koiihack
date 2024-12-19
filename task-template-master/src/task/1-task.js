@@ -7,9 +7,16 @@ const parser = new Parser();
 // Fetch news from public RSS feeds
 async function fetchRSSFeeds() {
   const rssFeeds = [
-    "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", // New York Times
-    "http://feeds.bbci.co.uk/news/rss.xml",                     // BBC News
-    "https://www.aljazeera.com/xml/rss/all.xml",                // Al Jazeera
+    "https://www.ndtv.com/rss",                        // NDTV
+    "https://timesofindia.indiatimes.com/rss.cms",     // Times of India
+    "https://www.hindustantimes.com/rss/topnews/rssfeed.xml", // Hindustan Times
+    "https://indianexpress.com/section/india/feed/",  // Indian Express
+    "https://www.espn.in/espn/rss/news",              // ESPN India
+    "https://economictimes.indiatimes.com/rss.cms",   // Economic Times
+    "https://zeenews.india.com/rss/india-national-news.xml", // Zee News
+    "https://www.rediff.com/rss/inrss.xml",           // Rediff
+    "https://www.livemint.com/rss/news",              // LiveMint
+    "https://www.thehindu.com/feeder/default.rss",    // The Hindu
   ];
 
   let aggregatedNews = [];
@@ -36,9 +43,16 @@ async function fetchRSSFeeds() {
 // Scrape news headlines directly from websites
 async function scrapeNewsWebsites() {
   const websites = [
-    { name: "BBC", url: "https://www.bbc.com/news", headlineSelector: "h3" },
-    { name: "NYTimes", url: "https://www.nytimes.com", headlineSelector: "h2" },
-    { name: "CNN", url: "https://edition.cnn.com", headlineSelector: "span.cd__headline-text" },
+    { name: "NDTV", url: "https://www.ndtv.com", headlineSelector: ".newsHdng" },
+    { name: "Times of India", url: "https://timesofindia.indiatimes.com", headlineSelector: "h1, h2, h3" },
+    { name: "Indian Express", url: "https://indianexpress.com", headlineSelector: "h2" },
+    { name: "Hindustan Times", url: "https://www.hindustantimes.com", headlineSelector: "h3" },
+    { name: "Zee News", url: "https://zeenews.india.com", headlineSelector: "h2" },
+    { name: "ESPN India", url: "https://www.espn.in", headlineSelector: "h1" },
+    { name: "Economic Times", url: "https://economictimes.indiatimes.com", headlineSelector: "h3" },
+    { name: "Rediff", url: "https://www.rediff.com", headlineSelector: "h2" },
+    { name: "LiveMint", url: "https://www.livemint.com", headlineSelector: "h3" },
+    { name: "The Hindu", url: "https://www.thehindu.com", headlineSelector: "h2" },
   ];
 
   let aggregatedNews = [];
@@ -81,7 +95,7 @@ async function fetchNewsAggregator() {
   return combinedNews;
 }
 
-// Task execution function for Koii
+// Task execution function
 async function task() {
   try {
     console.log("Starting News Aggregator Task...");
