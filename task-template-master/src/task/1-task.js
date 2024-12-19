@@ -3,13 +3,16 @@ import * as cheerio from "cheerio";
 import Parser from "rss-parser";
 import {BskyAgent} from "@atproto/api";
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as dotenv from "dotenv";
+
+dotenv.config();
+console.log(process.env.USERNAME)
 
 const parser = new Parser();
 
-// Define constants
-const USERNAME = "sanath-naik.bsky.social"; 
-const PASSWORD = "$@Nnukakka12";
-const apiKey = "AIzaSyDAgtN1RiD7oMBSMMEuioVPwTjXoklDHYc"
+const USERNAME = process.env.USERNAME; 
+const PASSWORD = process.env.PASSWORD;
+const apiKey = process.env.apiKey;
 
 async function generateSummary(context, apiKey) {
   try {
@@ -17,14 +20,13 @@ async function generateSummary(context, apiKey) {
 
       let model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      // Construct the prompt with context
       const prompt = {
           contents: [
           {
               role: 'user',
               parts: [
               {
-                  text: `Summarize the following news article into a concise paragraph containing the key details, including the main topic, any important names, dates, locations, and outcomes. Ensure the summary is clear and objective, without personal opinions or embellishments. Keep the summary under [desired word count] words.
+                  text: `Summarize the following news article where I have a bunch of news article in json format and I want to summarize each one of them individually into a concise paragraph containing the key details, including the main topic, any important names, dates, locations, and outcomes. Ensure the summary is clear and objective, without personal opinions or embellishments. Keep the summary under 200 words. 
                   Article: \n\n${JSON.stringify(
                   context
                   )}`,
@@ -43,19 +45,15 @@ async function generateSummary(context, apiKey) {
 
   } catch (error) {
     console.error('Error generating Bluesky comment:', error);
-    return null; // Or handle the error as needed
+    return null; 
   }
 }
 
-// Function to fetch the latest post
-// Function to fetch the latest post and parse the URL configuration
 async function fetchURL() {
   const agent = new BskyAgent({ service: 'https://bsky.social' });
 
-  // Log in to Bluesky
   await agent.login({ identifier: USERNAME, password: PASSWORD });
 
-  // Fetch the user's feed
   const profile = await agent.getProfile({ actor: USERNAME });
   const feed = await agent.getAuthorFeed({ actor: profile.data.did, limit: 1 });
 
@@ -64,7 +62,6 @@ async function fetchURL() {
 
     console.log("Raw URLs from Bluesky:", urlsBS);
 
-    // Parse the string to a JavaScript object
     try {
       const parsedURLs = JSON.parse(urlsBS);
       console.log("Parsed URLs:", parsedURLs);
@@ -79,7 +76,6 @@ async function fetchURL() {
   }
 }
 
-// Fetch news from public RSS feeds
 async function fetchRSSFeeds(category) {
   const rssFeeds = await fetchURL();
   console.log(typeof(rssFeeds))
@@ -104,17 +100,15 @@ async function fetchRSSFeeds(category) {
     }
   }
 
-  // Filter out unwanted items like "Videos" or "Opinion"
   aggregatedNews = aggregatedNews.filter(
     (article) =>
       article.title &&
       !["Videos", "Air Quality Index", "Opinion"].includes(article.title.trim())
   );
 
-  return aggregatedNews.slice(0, 10); // Limit to top 10 news
+  return aggregatedNews.slice(0, 10);
 }
 
-// Scrape news headlines directly from websites
 async function scrapeNewsWebsites() {
   const websites = [
     { name: "NDTV", url: "https://www.ndtv.com", headlineSelector: "h2" },
@@ -138,7 +132,6 @@ async function scrapeNewsWebsites() {
       const response = await axios.get(site.url);
       const $ = cheerio.load(response.data);
 
-      // Extract headlines based on the selector
       const headlines = [];
       $(site.headlineSelector).each((_, element) => {
         const title = $(element).text().trim();
@@ -154,10 +147,9 @@ async function scrapeNewsWebsites() {
     }
   }
 
-  return aggregatedNews.slice(0, 10); // Limit to top 10 news
+  return aggregatedNews.slice(0, 10); 
 }
 
-// Fetch full news content
 async function fetchFullContent(newsList) {
   const detailedNews = [];
 
@@ -167,7 +159,6 @@ async function fetchFullContent(newsList) {
       const response = await axios.get(news.link);
       const $ = cheerio.load(response.data);
 
-      // Extract the main content (this will depend on website structure)
       const content = $("article").text().trim() || $("body").text().trim();
       detailedNews.push({
         title: news.title,
@@ -191,7 +182,6 @@ async function fetchFullContent(newsList) {
   return detailedNews;
 }
 
-// Main task to aggregate news
 async function fetchNewsAggregator(category = "general") {
   console.log(`Starting news aggregation for category: ${category}`);
 
@@ -199,20 +189,18 @@ async function fetchNewsAggregator(category = "general") {
   const scrapedNews = await scrapeNewsWebsites();
 
   const combinedNews = [...rssNews, ...scrapedNews];
-  const detailedNews = await fetchFullContent(combinedNews.slice(0, 10)); // Limit to top 10 news
+  const detailedNews = await fetchFullContent(combinedNews.slice(0, 10));
   const summ = await generateSummary(detailedNews,apiKey);
   console.log("Aggregated News with Full Content:", detailedNews);
   console.log("Gemini Summarized:",summ)
-  return summ;
+  return {detailedNews, summ};
 }
 
-// Task execution function for Koii
 async function task() {
   try {
     console.log("Starting News Aggregator Task...");
     const newsData = await fetchNewsAggregator();
 
-    // Optionally return or log the data
     console.log("News aggregation completed.");
     return newsData;
   } catch (error) {
